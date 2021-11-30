@@ -9,6 +9,7 @@ from psycopg2 import errors
 from app.database.database import get_session
 from app.database.schemas import debtors_schemas
 from app.database.models import tables
+from app.utils import unique_check
 
 
 class DebtorService:
@@ -16,43 +17,43 @@ class DebtorService:
     def __init__(self, session: Session = Depends(get_session)):
         self.session = session
 
-    def get_debtors(self) -> List[debtors_schemas.Debtor]:
-        debtors = self.session.query(tables.Debtor).all()
+    def get_debtors(self, user_id: int) -> List[tables.Debtor]:
+        debtors = self.session.query(tables.Debtor).filter_by(user_id=user_id).all()
         return debtors
 
     def create_debtor(
             self,
+            user_id: int,
             debtor: debtors_schemas.DebtorCreate
     ) -> tables.Debtor:
-        new_debtor = tables.Debtor(**debtor.dict())
-        self.session.add(new_debtor)
-        try:
-            self.session.commit()
-        except IntegrityError as err:
-            assert isinstance(err.orig, errors.lookup(UNIQUE_VIOLATION))
-            self.session.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_412_PRECONDITION_FAILED,
-                detail="Такое имя уже занято"
-            )
+        new_debtor = tables.Debtor(**debtor.dict(), user_id=user_id)
+        unique_check.check(self.session, new_debtor)
         self.session.refresh(new_debtor)
         return new_debtor
 
     def update_debtor(
             self,
+            user_id: int,
             debtor_id: int,
             updated_data: debtors_schemas.DebtorUpdate
-    ) -> debtors_schemas.Debtor:
+    ) -> tables.Debtor:
         debtor = (self.session.query(tables.Debtor)
-                  .filter_by(id=debtor_id).first())
+                  .filter_by(user_id=user_id, id=debtor_id).first())
+
+        if not debtor:
+            raise HTTPException(
+                status_code=status.HTTP_412_PRECONDITION_FAILED,
+                detail="Такой записи нет в базе данных"
+            )
 
         for field, value in updated_data:
             setattr(debtor, field, value)
         self.session.commit()
+        self.session.refresh(debtor)
         return debtor
 
-    def delete_debtor(self, debtor_id: int) -> None:
+    def delete_debtor(self, user_id: int, debtor_id: int) -> None:
         debtor = (self.session.query(tables.Debtor)
-                  .filter_by(id=debtor_id).first())
+                  .filter_by(user_id=user_id, id=debtor_id).first())
         self.session.delete(debtor)
         self.session.commit()

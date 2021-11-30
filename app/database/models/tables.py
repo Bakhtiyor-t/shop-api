@@ -1,4 +1,5 @@
-from sqlalchemy import Integer, Column, String, Numeric, ForeignKey, Date
+from sqlalchemy import Integer, Column, String, Numeric, ForeignKey, Date, Boolean
+from sqlalchemy.orm import relationship
 
 from ..database import Base
 
@@ -19,12 +20,14 @@ class Firm(Base):
     paid_for = Column(Numeric(10, 3))
     debt = Column(Numeric(10, 3))
 
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    user = relationship('User', backref="firms")
+
 
 class Invoice(Base):
     __tablename__ = "invoices"
 
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
-    firm_id = Column(Integer, ForeignKey("firms.id"))
     image_id = Column(Integer, unique=True, nullable=False)
     image_uri = Column(String, nullable=False)
     paid_for = Column(Numeric(10, 3))
@@ -32,6 +35,12 @@ class Invoice(Base):
     previous_debt = Column(Numeric(10, 3))
     debt = Column(Numeric(10, 3))
     date = Column(Date)
+
+    firm_id = Column(Integer, ForeignKey("firms.id", ondelete="CASCADE"), index=True)
+    firm = relationship('Firm', backref='invoices')
+
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    user = relationship('User', backref='invoices')
 
 
 class Debtor(Base):
@@ -42,5 +51,16 @@ class Debtor(Base):
     paid_for = Column(Numeric(10, 3))
     debt = Column(Numeric(10, 3))
 
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    user = relationship('User', backref='debtors')
 
-from sqlalchemy.exc import IntegrityError
+
+class ShoppingList(Base):
+    __tablename__ = "shopping_list"
+
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    name = Column(String, unique=True)
+    purchased = Column(Boolean, default=False)
+
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    user = relationship('User', backref='shopping_list')
