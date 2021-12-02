@@ -14,7 +14,7 @@ from app.database.database import get_session
 from app.database.models import tables
 from app.database.schemas import users_schemas
 from app.settings import settings
-from app.utils import unique_check
+from app.utils import validator
 
 auth = OAuth2PasswordBearer(tokenUrl="/auth/sign-in")
 
@@ -34,7 +34,7 @@ class AuthService:
             username=user_data.username,
             password_hash=password_hash
         )
-        unique_check.check(self.session, user)
+        validator.check(self.session, user)
         return self.create_token(user)
 
     def sign_in(self, username: str, password: str) -> users_schemas.Token:

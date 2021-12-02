@@ -9,7 +9,7 @@ from psycopg2 import errors
 from app.database.database import get_session
 from app.database.schemas import debtors_schemas
 from app.database.models import tables
-from app.utils import unique_check
+from app.utils import validator
 
 
 class DebtorService:
@@ -27,7 +27,7 @@ class DebtorService:
             debtor: debtors_schemas.DebtorCreate
     ) -> tables.Debtor:
         new_debtor = tables.Debtor(**debtor.dict(), user_id=user_id)
-        unique_check.check(self.session, new_debtor)
+        validator.check(self.session, new_debtor)
         self.session.refresh(new_debtor)
         return new_debtor
 
@@ -37,14 +37,12 @@ class DebtorService:
             debtor_id: int,
             updated_data: debtors_schemas.DebtorUpdate
     ) -> tables.Debtor:
-        debtor = (self.session.query(tables.Debtor)
-                  .filter_by(user_id=user_id, id=debtor_id).first())
+        debtor = (
+            self.session.query(tables.Debtor)
+            .filter_by(user_id=user_id, id=debtor_id).first()
+        )
 
-        if not debtor:
-            raise HTTPException(
-                status_code=status.HTTP_412_PRECONDITION_FAILED,
-                detail="Такой записи нет в базе данных"
-            )
+        validator.is_none_check(debtor)
 
         for field, value in updated_data:
             setattr(debtor, field, value)

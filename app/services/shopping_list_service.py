@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.database.database import get_session
 from app.database.models import tables
 from app.database.schemas.shopping_list_schemas import ShoppingList, ShoppingListCreate, ShoppingListUpdate
-from app.utils import unique_check
+from app.utils import validator
 
 
 class ShoppingListService:
@@ -29,7 +29,7 @@ class ShoppingListService:
     ) -> tables.ShoppingList:
         item = tables.ShoppingList(**list_item.dict(), user_id=user_id)
         self.session.add(item)
-        unique_check.check(session=self.session, obj=item)
+        validator.check(session=self.session, obj=item)
         return item
 
     def update_item(
@@ -45,7 +45,7 @@ class ShoppingListService:
                 .first()
         )
 
-        unique_check.is_none_check(item)
+        validator.is_none_check(item)
 
         for field, value in list_item:
             setattr(item, field, value)
@@ -61,7 +61,7 @@ class ShoppingListService:
             .first()
         )
 
-        unique_check.is_none_check(item)
+        validator.is_none_check(item)
 
         self.session.delete(item)
         self.session.commit()
