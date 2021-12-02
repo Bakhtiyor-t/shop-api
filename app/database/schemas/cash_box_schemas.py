@@ -11,7 +11,7 @@ class CashBoxBase(BaseModel):
     date: datetime = datetime.utcnow()
 
 
-class CashBox(BaseModel):
+class CashBox(CashBoxBase):
     id: int
     user_id: int
 
