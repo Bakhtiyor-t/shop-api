@@ -1,16 +1,15 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
+from typing import List, Optional
 
 from pydantic import BaseModel
 
 
 class FirmBase(BaseModel):
     name: str
-    paid_for: Decimal
-    debt: Decimal
 
 
-class Firm(FirmBase):
+class FirmPart(FirmBase):
     id: int
     user_id: int
 
@@ -18,7 +17,20 @@ class Firm(FirmBase):
         orm_mode = True
 
 
-class FirmCreate(FirmBase):
+class FirmFinance(BaseModel):
+    paid_for: Optional[Decimal] = 0.0
+    debt: Optional[Decimal] = 0.0
+    date: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True
+
+
+class Firm(FirmPart, FirmFinance):
+    pass
+
+
+class FirmCreate(FirmBase, FirmFinance):
     pass
 
 
@@ -33,7 +45,7 @@ class InvoiceBase(BaseModel):
     payment: Decimal
     previous_debt: Decimal
     debt: Decimal
-    date = date
+    date = datetime
 
 
 class Invoice(InvoiceBase):

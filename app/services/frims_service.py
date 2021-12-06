@@ -1,11 +1,16 @@
+from datetime import datetime
+from decimal import Decimal
 from typing import List
 
 from fastapi import Depends
+from sqlalchemy import desc, asc
 from sqlalchemy.orm import Session
 
 from app.database.database import get_session
 from app.database.models import tables
-from app.database.schemas.firms_schemas import FirmCreate, Firm, Invoice, InvoiceCreate, InvoiceUpdate
+from app.database.schemas.firms_schemas import FirmCreate, Firm, Invoice, InvoiceCreate, InvoiceUpdate, FirmPart, \
+    FirmFinance
+from app.database.schemas.main_schemas import Period
 from app.utils import validator
 
 
@@ -13,23 +18,59 @@ class FirmsService:
     def __init__(self, session: Session = Depends(get_session)):
         self.session = session
 
-    def get_firms(self, user_id: int) -> List[Firm]:
+    @classmethod
+    def get_firm(
+            cls,
+            firm: tables.Firm,
+            firm_finance: tables.FinanceHistory
+    ) -> Firm:
+        if firm is None:
+            return []
+        firm_data = FirmPart.from_orm(firm)
+        if firm_finance is None:
+            return Firm(**firm_data.dict())
+        finance_data = FirmFinance.from_orm(firm_finance)
+        return Firm(**firm_data.dict(), **finance_data.dict())
+
+    def get_firms(
+            self,
+            user_id: int,
+            period: Period = Period()
+    ) -> List[Firm]:
         firms = (
             self.session.query(tables.Firm)
                 .filter_by(user_id=user_id).all()
         )
-        # validator.is_none_check(firms)
-        return firms
+        if firms is None:
+            return []
+        result = []
+        for firm in firms:
+            finance = (
+                self.session
+                    .query(tables.FinanceHistory)
+                    .filter_by(firm_id=firm.id)
+                    .where(tables.FinanceHistory.date >= period.from_date)
+                    .where(tables.FinanceHistory.date < period.to_date)
+                    .order_by(desc(tables.FinanceHistory.date))
+                    .first()
+            )
+            print(finance)
+            result.append(self.get_firm(firm, finance))
+        return result
 
     def create_firm(
             self,
             user_id: int,
-            firm_data: FirmCreate
-    ) -> tables.Firm:
-        firm = tables.Firm(**firm_data.dict(), user_id=user_id)
+            firm_data: FirmCreate,
+    ) -> Firm:
+        firm = tables.Firm(name=firm_data.name, user_id=user_id)
         self.session.add(firm)
         validator.check(session=self.session, obj=firm)
-        return firm
+        firm_finance = tables.FinanceHistory(**firm_data.dict(exclude={"name"}), firm_id=firm.id)
+        self.session.add(firm_finance)
+        self.session.commit()
+        self.session.refresh(firm_finance)
+        return self.get_firm(firm, firm_finance)
 
     def update_firm(
             self,
@@ -62,11 +103,52 @@ class FirmsService:
         self.session.delete(firm)
         self.session.commit()
 
+    # INVOICES
+
+    def create_finance(self, invoice: tables.Invoice) -> None:
+        finances = (
+            self.session
+                .query(tables.FinanceHistory)
+                .filter_by(firm_id=invoice.firm_id)
+                .order_by(desc(tables.FinanceHistory.date))
+                .first()
+        )
+        paid_for = invoice.paid_for + finances.paid_for
+        debt = (
+                invoice.payment + invoice.previous_debt
+                - invoice.paid_for
+        )
+        data = FirmFinance(paid_for=paid_for, debt=debt, date=datetime.now())
+        self.set_finance(data, invoice.firm_id)
+
+    def update_finance(self, invoice: tables.Invoice) -> None:
+        invoices = self.get_invoices(invoice.user_id, invoice.firm_id)
+        paid_for = Decimal(0)
+        debt = Decimal(0)
+        for item in invoices:
+            paid_for += item.paid_for
+            debt += item.debt
+        data = FirmFinance(paid_for=paid_for, debt=debt, date=datetime.now())
+        self.set_finance(data, invoice.firm_id)
+
+    def set_finance(
+            self,
+            data: FirmFinance,
+            firm_id: int,
+    ) -> None:
+        new_finance = tables.FinanceHistory(
+            **data.dict(),
+            firm_id=firm_id
+        )
+        self.session.add(new_finance)
+        self.session.commit()
+        self.session.refresh(new_finance)
+
     def get_invoices(
             self,
             user_id: int,
             firm_id: int,
-    ) -> List[Invoice]:
+    ) -> List[tables.Invoice]:
         invoices = (
             self.session.query(tables.Invoice)
                 .filter_by(user_id=user_id, firm_id=firm_id)
@@ -87,6 +169,7 @@ class FirmsService:
             user_id=user_id
         )
         validator.check(self.session, invoice)
+        self.create_finance(invoice)
         return invoice
 
     def update_invoice(
@@ -106,6 +189,7 @@ class FirmsService:
             setattr(invoice, field, value)
         self.session.commit()
         self.session.refresh(invoice)
+        self.update_finance(invoice)
         return invoice
 
     def delete_invoice(

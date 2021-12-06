@@ -5,14 +5,17 @@ from fastapi.templating import Jinja2Templates
 
 from .routers import routers
 
-app = FastAPI()
+app = FastAPI(
+    title="Shop-API",
+    version="1.0.0"
+)
 app.include_router(routers.router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 templates = Jinja2Templates(directory="app/static")
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/", tags=["Главная"], response_class=HTMLResponse)
 def index(request: Request):
     return templates.TemplateResponse('index.html', {"request": request})
     # with open("app/static/index.html", 'r') as file:

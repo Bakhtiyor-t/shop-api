@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, Column, String, Numeric, ForeignKey, Date, Boolean, DateTime
+from sqlalchemy import Integer, Column, String, Numeric, ForeignKey, Date, Boolean, DateTime, desc
 from sqlalchemy.orm import relationship, backref
 
 from ..database import Base
@@ -17,11 +17,22 @@ class Firm(Base):
 
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     name = Column(String, nullable=False, unique=True)
-    paid_for = Column(Numeric(10, 3))
-    debt = Column(Numeric(10, 3))
 
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     user = relationship('User', backref=backref("firms", cascade="all, delete"))
+
+
+class FinanceHistory(Base):
+    __tablename__ = "finances"
+
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+
+    paid_for = Column(Numeric(10, 3))
+    debt = Column(Numeric(10, 3))
+    date = Column(DateTime, nullable=False)
+
+    firm_id = Column(Integer, ForeignKey("firms.id", ondelete="CASCADE"))
+    firm = relationship("Firm", backref=backref("finances", cascade="all, delete"))
 
 
 class Invoice(Base):

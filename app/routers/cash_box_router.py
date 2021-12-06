@@ -17,7 +17,7 @@ router = APIRouter(
 @router.get("/", response_model=List[CashBox])
 async def get_info(
         user: User = Depends(get_current_user),
-        service: CashBoxService = Depends()
+        service: CashBoxService = Depends(),
 ):
     return service.get_info(user.id)
 
