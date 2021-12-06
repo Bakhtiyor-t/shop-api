@@ -1,15 +1,15 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import List
+from typing import List, Optional
 
 from fastapi import Depends
-from sqlalchemy import desc, asc
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from app.database.database import get_session
 from app.database.models import tables
-from app.database.schemas.firms_schemas import FirmCreate, Firm, Invoice, InvoiceCreate, InvoiceUpdate, FirmPart, \
-    FirmFinance
+from app.database.schemas.firms_schemas import FirmCreate, Firm, InvoiceCreate, InvoiceUpdate, FirmPart, \
+    FirmFinance, Invoice
 from app.database.schemas.main_schemas import Period
 from app.utils import validator
 
@@ -23,9 +23,9 @@ class FirmsService:
             cls,
             firm: tables.Firm,
             firm_finance: tables.FinanceHistory
-    ) -> Firm:
+    ) -> Optional[Firm]:
         if firm is None:
-            return []
+            return None
         firm_data = FirmPart.from_orm(firm)
         if firm_finance is None:
             return Firm(**firm_data.dict())
@@ -54,7 +54,6 @@ class FirmsService:
                     .order_by(desc(tables.FinanceHistory.date))
                     .first()
             )
-            print(finance)
             result.append(self.get_firm(firm, finance))
         return result
 
@@ -103,47 +102,6 @@ class FirmsService:
         self.session.delete(firm)
         self.session.commit()
 
-    # INVOICES
-
-    def create_finance(self, invoice: tables.Invoice) -> None:
-        finances = (
-            self.session
-                .query(tables.FinanceHistory)
-                .filter_by(firm_id=invoice.firm_id)
-                .order_by(desc(tables.FinanceHistory.date))
-                .first()
-        )
-        paid_for = invoice.paid_for + finances.paid_for
-        debt = (
-                invoice.payment + invoice.previous_debt
-                - invoice.paid_for
-        )
-        data = FirmFinance(paid_for=paid_for, debt=debt, date=datetime.now())
-        self.set_finance(data, invoice.firm_id)
-
-    def update_finance(self, invoice: tables.Invoice) -> None:
-        invoices = self.get_invoices(invoice.user_id, invoice.firm_id)
-        paid_for = Decimal(0)
-        debt = Decimal(0)
-        for item in invoices:
-            paid_for += item.paid_for
-            debt += item.debt
-        data = FirmFinance(paid_for=paid_for, debt=debt, date=datetime.now())
-        self.set_finance(data, invoice.firm_id)
-
-    def set_finance(
-            self,
-            data: FirmFinance,
-            firm_id: int,
-    ) -> None:
-        new_finance = tables.FinanceHistory(
-            **data.dict(),
-            firm_id=firm_id
-        )
-        self.session.add(new_finance)
-        self.session.commit()
-        self.session.refresh(new_finance)
-
     def get_invoices(
             self,
             user_id: int,
@@ -168,9 +126,17 @@ class FirmsService:
             firm_id=firm_id,
             user_id=user_id
         )
+        self.get_debt(invoice_data, invoice)
         validator.check(self.session, invoice)
         self.create_finance(invoice)
         return invoice
+
+    @classmethod
+    def get_debt(cls, data: InvoiceCreate, invoice: tables.Invoice) -> None:
+        if data.debt == 0 and data.previous_debt != 0:
+            invoice.debt = (data.payment +
+                            data.previous_debt -
+                            data.paid_for)
 
     def update_invoice(
             self,
@@ -185,11 +151,13 @@ class FirmsService:
                 .first()
         )
         validator.is_none_check(invoice)
+        prev_inv = Invoice.from_orm(invoice)
         for field, value in invoice_data:
             setattr(invoice, field, value)
+        self.get_debt(invoice_data, invoice)
         self.session.commit()
         self.session.refresh(invoice)
-        self.update_finance(invoice)
+        self.update_finance(invoice, prev_inv)
         return invoice
 
     def delete_invoice(
@@ -204,5 +172,62 @@ class FirmsService:
                 .first()
         )
         validator.is_none_check(invoice)
+        inv = invoice
         self.session.delete(invoice)
         self.session.commit()
+        self.delete_finance(inv)
+
+    # Finance operations
+
+    def get_finance(self, firm_id: int) -> tables.FinanceHistory:
+        return (
+            self.session
+                .query(tables.FinanceHistory)
+                .filter_by(firm_id=firm_id)
+                .order_by(desc(tables.FinanceHistory.date))
+                .first()
+        )
+
+    def create_finance(self, invoice: tables.Invoice) -> None:
+        finances = self.get_finance(invoice.firm_id)
+        paid_for = invoice.paid_for + finances.paid_for
+        debt = finances.debt + invoice.debt
+        self.set_finance(paid_for, debt, invoice.firm_id)
+
+    def update_finance(
+            self,
+            invoice: tables.Invoice,
+            prev_inv: tables.Invoice
+    ) -> None:
+        finance = self.get_finance(invoice.firm_id)
+        paid_for = finance.paid_for + (invoice.paid_for - prev_inv.paid_for)
+        debt = finance.debt + (invoice.debt - prev_inv.debt)
+        print(paid_for, " : ", debt)
+        # invoices = self.get_invoices(invoice.user_id, invoice.firm_id)
+        # paid_for = Decimal(0)
+        # debt = Decimal(0)
+        # for item in invoices:
+        #     paid_for += item.paid_for
+        #     debt += item.debt
+        self.set_finance(paid_for, debt, invoice.firm_id)
+
+    def set_finance(
+            self,
+            paid_for: Decimal,
+            debt: Decimal,
+            firm_id: int,
+    ) -> None:
+        data = FirmFinance(paid_for=paid_for, debt=debt, date=datetime.now())
+        new_finance = tables.FinanceHistory(
+            **data.dict(),
+            firm_id=firm_id
+        )
+        self.session.add(new_finance)
+        self.session.commit()
+        self.session.refresh(new_finance)
+
+    def delete_finance(self, invoice: tables.Invoice) -> None:
+        finance = self.get_finance(invoice.firm_id)
+        paid_for = finance.paid_for - invoice.paid_for
+        debt = finance.debt - invoice.debt
+        self.set_finance(paid_for, debt, invoice.firm_id)

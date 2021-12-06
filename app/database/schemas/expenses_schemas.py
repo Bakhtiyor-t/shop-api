@@ -8,7 +8,7 @@ from pydantic import BaseModel
 class ExpenseBase(BaseModel):
     name: str
     price: Decimal
-    date: datetime = datetime.utcnow()
+    date: datetime = datetime.now()
     firm_flag: bool = False
 
 
