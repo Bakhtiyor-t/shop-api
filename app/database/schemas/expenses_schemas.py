@@ -16,6 +16,7 @@ class Expense(ExpenseBase):
     id: int
     user_id: int
     firm_id: Optional[int] = None
+    company_id: int
 
     class Config:
         orm_mode = True

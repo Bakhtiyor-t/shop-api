@@ -12,14 +12,15 @@ class FirmBase(BaseModel):
 class FirmPart(FirmBase):
     id: int
     user_id: int
+    company_id: int
 
     class Config:
         orm_mode = True
 
 
 class FirmFinance(BaseModel):
-    paid_for: Optional[Decimal] = 0.0
-    debt: Optional[Decimal] = 0.0
+    paid_for: Optional[Decimal] = Decimal(0)
+    debt: Optional[Decimal] = Decimal(0)
     date: Optional[datetime] = None
 
     class Config:
@@ -52,6 +53,7 @@ class Invoice(InvoiceBase):
     id: int
     firm_id: int
     user_id: int
+    company_id: int
 
     class Config:
         orm_mode = True

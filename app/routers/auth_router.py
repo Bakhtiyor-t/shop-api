@@ -26,6 +26,7 @@ async def sign_in(
     return service.sign_in(form_data.username, form_data.password)
 
 
+# It's not correct work need fix
 @router.get("/user", response_model=users_schemas.User)
 def get_user(user: users_schemas.User = Depends(get_current_user)):
     return user

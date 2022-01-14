@@ -1,6 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from app.database.schemas.main_schemas import Period
+from app.database.schemas.main_schemas import Period, Result
+from app.database.schemas.users_schemas import User
+from app.services.auth_service import get_current_user
+from app.services.main_service import MainService
 
 router = APIRouter(
     prefix="/main",
@@ -8,11 +11,10 @@ router = APIRouter(
 )
 
 
-@router.get("/")
-async def get_info():
-    pass
-
-
-@router.get("/period")
-async def get_from_period(period: Period):
-    pass
+@router.get("/", response_model=Result)
+async def get_info(
+        period: Period = Depends(),
+        user_id: int = Depends(get_current_user),
+        service: MainService = Depends()
+):
+    return service.get_info(user_id, period)

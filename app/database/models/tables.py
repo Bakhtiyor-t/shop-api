@@ -4,12 +4,24 @@ from sqlalchemy.orm import relationship, backref
 from ..database import Base
 
 
+class Company(Base):
+    __tablename__ = "company"
+
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    name = Column(String, nullable=False, unique=True)
+
+    users = relationship('User', backref="company")
+
+
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     username = Column(String, nullable=False, unique=True)
     password_hash = Column(String)
+
+    company_id = Column(Integer, ForeignKey("company.id", ondelete="SET NULL"))
+    chief = Column(Boolean, default=False)
 
 
 class Firm(Base):
@@ -20,6 +32,8 @@ class Firm(Base):
 
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     user = relationship('User', backref=backref("firms", cascade="all, delete"))
+
+    company_id = Column(Integer, ForeignKey("company.id", ondelete="SET NULL"))
 
 
 class FinanceHistory(Base):
@@ -33,6 +47,8 @@ class FinanceHistory(Base):
 
     firm_id = Column(Integer, ForeignKey("firms.id", ondelete="CASCADE"))
     firm = relationship("Firm", backref=backref("finances", cascade="all, delete"))
+
+    company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"))
 
 
 class Invoice(Base):
@@ -53,6 +69,8 @@ class Invoice(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     user = relationship('User', backref=backref("invoices", cascade="all, delete"))
 
+    company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"))
+
 
 class Debtor(Base):
     __tablename__ = "debtors"
@@ -65,6 +83,8 @@ class Debtor(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     user = relationship('User', backref=backref("debtors", cascade="all, delete"))
 
+    company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"))
+
 
 class ShoppingList(Base):
     __tablename__ = "shopping_list"
@@ -75,6 +95,8 @@ class ShoppingList(Base):
 
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     user = relationship('User', backref=backref("shopping_list", cascade="all, delete"))
+
+    company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"))
 
 
 class Expense(Base):
@@ -92,6 +114,8 @@ class Expense(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     user = relationship('User', backref=backref("expenses", cascade="all, delete"))
 
+    company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"))
+
 
 class CashBox(Base):
     __tablename__ = "cash_box"
@@ -103,3 +127,6 @@ class CashBox(Base):
 
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     user = relationship('User', backref=backref("cash_box", cascade="all, delete"))
+
+    company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"))
+    # company = relationship('User', backref=backref("cash_box", cascade="all, delete"))

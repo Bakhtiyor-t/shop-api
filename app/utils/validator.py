@@ -7,8 +7,7 @@ from sqlalchemy.orm import Session
 from app.database.models.tables import Base
 
 
-def check(session: Session, obj: Base) -> None:
-    session.add(obj)
+def check_unique(session: Session) -> None:
     try:
         session.commit()
     except IntegrityError as err:
@@ -20,13 +19,11 @@ def check(session: Session, obj: Base) -> None:
                 detail="Такое имя уже занято"
             )
         elif isinstance(err.orig, errors.lookup(FOREIGN_KEY_VIOLATION)):
-            print("ssssssssss: ", err)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Пользователь с таким именем удалён из базы данных",
                 headers={'WWW-Authenticate': 'Bearer'},
             )
-    session.refresh(obj)
 
 
 def is_none_check(obj: Base):

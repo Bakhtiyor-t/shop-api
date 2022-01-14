@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.database.database import get_session
 from app.database.models import tables
 from app.database.schemas.shopping_list_schemas import ShoppingList, ShoppingListCreate, ShoppingListUpdate
+from app.services.dublicated_operations import update, delete, check_user
 from app.utils import validator
 
 
@@ -15,11 +16,12 @@ class ShoppingListService:
         self.session = session
 
     def get_list(self, user_id: int) -> List[ShoppingList]:
+        company_id = check_user(self.session, user_id)
         return (
             self.session
-            .query(tables.ShoppingList)
-            .filter_by(user_id=user_id)
-            .all()
+                .query(tables.ShoppingList)
+                .filter_by(company_id=company_id)
+                .all()
         )
 
     def create_item(
@@ -27,9 +29,15 @@ class ShoppingListService:
             user_id: int,
             list_item: ShoppingListCreate
     ) -> tables.ShoppingList:
-        item = tables.ShoppingList(**list_item.dict(), user_id=user_id)
+        company_id = check_user(self.session, user_id)
+        item = tables.ShoppingList(
+            **list_item.dict(),
+            user_id=user_id,
+            company_id=company_id
+        )
         self.session.add(item)
-        validator.check(session=self.session, obj=item)
+        validator.check_unique(session=self.session)
+        self.session.refresh(item)
         return item
 
     def update_item(
@@ -38,30 +46,20 @@ class ShoppingListService:
             item_id: int,
             list_item: ShoppingListUpdate
     ) -> tables.ShoppingList:
-        item = (
-            self.session
-                .query(tables.ShoppingList)
-                .filter_by(id=item_id, user_id=user_id)
-                .first()
+        company_id = check_user(self.session, user_id)
+        return update(
+            session=self.session,
+            table=tables.ShoppingList,
+            user_id=user_id,
+            item_id=item_id,
+            item_data=list_item
         )
-
-        validator.is_none_check(item)
-
-        for field, value in list_item:
-            setattr(item, field, value)
-        self.session.commit()
-        self.session.refresh(item)
-        return item
 
     def delete_item(self, user_id: int, item_id: int) -> None:
-        item = (
-            self.session
-            .query(tables.ShoppingList)
-            .filter_by(id=item_id, user_id=user_id)
-            .first()
+        company_id = check_user(self.session, user_id)
+        delete(
+            session=self.session,
+            user_id=user_id,
+            item_id=item_id,
+            table=tables.ShoppingList,
         )
-
-        validator.is_none_check(item)
-
-        self.session.delete(item)
-        self.session.commit()

@@ -14,6 +14,7 @@ class CashBoxBase(BaseModel):
 class CashBox(CashBoxBase):
     id: int
     user_id: int
+    company_id: int
 
     class Config:
         orm_mode = True

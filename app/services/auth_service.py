@@ -34,7 +34,9 @@ class AuthService:
             username=user_data.username,
             password_hash=password_hash
         )
-        validator.check(self.session, user)
+        self.session.add(user)
+        validator.check_unique(self.session)
+        self.session.refresh(user)
         return self.create_token(user)
 
     def sign_in(self, username: str, password: str) -> users_schemas.Token:
@@ -67,7 +69,7 @@ class AuthService:
         return bcrypt.hash(password)
 
     @classmethod
-    def verify_token(cls, token: str) -> users_schemas.User:
+    def verify_token(cls, token: str) -> int:
         exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Could not validate credentials',
@@ -83,14 +85,13 @@ class AuthService:
         except JWTError:
             raise exception
 
-        user_data = payload.get("user", None)
+        user_id = payload.get("sub", None)
 
-        try:
-            user = users_schemas.User.parse_obj(user_data)
-        except ValidationError:
-            raise exception
-
-        return user
+        # try:
+        #     user = users_schemas.User.parse_obj(user_data)
+        # except ValidationError:
+        #     raise exception
+        return int(user_id)
 
     @classmethod
     def create_token(cls, user: tables.User) -> users_schemas.Token:

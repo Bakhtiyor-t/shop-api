@@ -1,8 +1,8 @@
-"""create finances table for firm table
+"""empty message
 
-Revision ID: bac795e75512
-Revises: db854c62992b
-Create Date: 2021-12-05 16:32:54.298669
+Revision ID: afb04644c5e6
+Revises: 451093000213
+Create Date: 2022-01-10 11:39:04.165966
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'bac795e75512'
-down_revision = 'db854c62992b'
+revision = 'afb04644c5e6'
+down_revision = '451093000213'
 branch_labels = None
 depends_on = None
 
