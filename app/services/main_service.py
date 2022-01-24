@@ -26,7 +26,7 @@ class MainService:
         self.cash_box_service = cash_box_service
 
     def get_info(self, user_id: int, period: Period) -> Result:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
         firms = self.firm_service.get_firms(user_id, period)
         expenses = self.expenses_service.get_expenses(user_id, period)
         cash_box = self.cash_box_service.get_info(user_id, period)

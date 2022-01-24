@@ -47,11 +47,16 @@ class CompanyService:
             user_id: int,
             data: UpdateCompany
     ) -> tables.Company:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
+        if not user.chief:
+            raise HTTPException(
+                status_code=status.HTTP_412_PRECONDITION_FAILED,
+                detail="У вас нет прав на это действие!"
+            )
         company: tables.Company = (
             self.session
                 .query(tables.Company)
-                .get(company_id)
+                .get(user.company_id)
         )
         company.name = data.name
         validator.check_unique(self.session)
@@ -59,18 +64,24 @@ class CompanyService:
         return company
 
     def delete_company(self, user_id: int) -> None:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
+
+        if not user.chief:
+            raise HTTPException(
+                status_code=status.HTTP_412_PRECONDITION_FAILED,
+                detail="У вас нет прав на это действие!"
+            )
+
         company: tables.Company = (
             self.session
                 .query(tables.Company)
-                .get(company_id)
+                .get(user.company_id)
         )
         validator.is_none_check(company)
         self.session.delete(company)
         self.session.commit()
 
-        user_: tables.User = self.session.query(tables.User).get(user_id)
-        user_.company_id = None
-        user_.chief = False
+        user.company_id = None
+        user.chief = False
         self.session.commit()
-        self.session.refresh(user_)
+        self.session.refresh(user)

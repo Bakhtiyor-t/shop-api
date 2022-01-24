@@ -38,10 +38,10 @@ class FirmsService:
             user_id: int,
             period: Period
     ) -> List[Firm]:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
         firms = (
             self.session.query(tables.Firm)
-                .filter_by(company_id=company_id)
+                .filter_by(company_id=user.company_id)
                 .all()
         )
         if firms is None:
@@ -51,7 +51,7 @@ class FirmsService:
             finance = (
                 self.session
                     .query(tables.FinanceHistory)
-                    .filter_by(firm_id=firm.id, company_id=company_id)
+                    .filter_by(firm_id=firm.id, company_id=user.company_id)
                     .where(tables.FinanceHistory.date >= period.from_date)
                     .where(tables.FinanceHistory.date < period.to_date)
                     .order_by(desc(tables.FinanceHistory.date))
@@ -65,11 +65,11 @@ class FirmsService:
             user_id: int,
             firm_data: FirmCreate,
     ) -> Firm:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
         firm = tables.Firm(
             name=firm_data.name,
             user_id=user_id,
-            company_id=company_id
+            company_id=user.company_id
         )
         self.session.add(firm)
         validator.check_unique(session=self.session)
@@ -77,7 +77,7 @@ class FirmsService:
         firm_finance = tables.FinanceHistory(
             **firm_data.dict(exclude={"name"}),
             firm_id=firm.id,
-            company_id=company_id
+            company_id=user.company_id
         )
         self.session.add(firm_finance)
         self.session.commit()
@@ -90,10 +90,10 @@ class FirmsService:
             firm_id: int,
             firm_name: str
     ) -> tables.Firm:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
         firm = (
             self.session.query(tables.Firm)
-                .filter_by(id=firm_id, company_id=company_id)
+                .filter_by(id=firm_id, company_id=user.company_id)
                 .first()
         )
         validator.is_none_check(firm)
@@ -107,14 +107,15 @@ class FirmsService:
             self,
             user_id: int,
             firm_id: int,
-    ) -> None:
-        company_id = check_user(self.session, user_id)
+    ) -> tables.User:
+        user = check_user(self.session, user_id)
         delete(
             session=self.session,
             user_id=user_id,
             item_id=firm_id,
             table=tables.Firm,
         )
+        return user
 
     def get_invoices(
             self,
@@ -122,10 +123,10 @@ class FirmsService:
             firm_id: int,
             period: Period
     ) -> List[tables.Invoice]:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
         invoices = (
             self.session.query(tables.Invoice)
-                .filter_by(company_id=company_id, firm_id=firm_id)
+                .filter_by(company_id=user.company_id, firm_id=firm_id)
                 .where(tables.Invoice.date >= period.from_date)
                 .where(tables.Invoice.date < period.to_date)
                 .order_by(desc(tables.Invoice.date))
@@ -140,18 +141,20 @@ class FirmsService:
             firm_id: int,
             invoice_data: InvoiceCreate
     ) -> tables.Invoice:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
         invoice = tables.Invoice(
             **invoice_data.dict(),
             firm_id=firm_id,
             user_id=user_id,
-            company_id=company_id
+            company_id=user.company_id
         )
+        print(invoice_data.dict())
         self.get_debt(invoice_data, invoice)
         self.session.add(invoice)
         validator.check_unique(self.session)
         self.session.refresh(invoice)
         self.create_finance(invoice)
+        print(invoice.date)
         return invoice
 
     @classmethod
@@ -167,12 +170,12 @@ class FirmsService:
             invoice_id: int,
             invoice_data: InvoiceUpdate
     ) -> tables.Invoice:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
         invoice = (
             self.session.query(tables.Invoice)
                 .filter_by(
                     id=invoice_id,
-                    company_id=company_id
+                    company_id=user.company_id
                 )
                 .first()
         )
@@ -181,7 +184,8 @@ class FirmsService:
         for field, value in invoice_data:
             setattr(invoice, field, value)
         self.get_debt(invoice_data, invoice)
-        self.session.commit()
+        validator.check_unique(self.session)
+        # self.session.commit()
         self.session.refresh(invoice)
         self.update_finance(invoice, prev_inv)
         return invoice
@@ -190,26 +194,28 @@ class FirmsService:
             self,
             user_id: int,
             invoice_id: int
-    ) -> None:
-        company_id = check_user(self.session, user_id)
+    ) -> dict:
+        user = check_user(self.session, user_id)
         invoice = (
             self.session.query(tables.Invoice)
                 .filter_by(id=invoice_id)
                 .first()
         )
         validator.is_none_check(invoice)
+        firm_id = invoice.firm_id
         self.delete_finance(invoice)
         self.session.delete(invoice)
         self.session.commit()
+        return {"company_id": user.company_id, "firm_id": firm_id}
 
     # Finance operations
 
     def get_finance(self, user_id: int, firm_id: int) -> tables.FinanceHistory:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
         return (
             self.session
                 .query(tables.FinanceHistory)
-                .filter_by(firm_id=firm_id, company_id=company_id)
+                .filter_by(firm_id=firm_id, company_id=user.company_id)
                 .order_by(desc(tables.FinanceHistory.date))
                 .first()
         )
@@ -229,12 +235,6 @@ class FirmsService:
         paid_for = finance.paid_for + (invoice.paid_for - prev_inv.paid_for)
         debt = finance.debt + (invoice.debt - prev_inv.debt)
         print(paid_for, " : ", debt)
-        # invoices = self.get_invoices(invoice.user_id, invoice.firm_id)
-        # paid_for = Decimal(0)
-        # debt = Decimal(0)
-        # for item in invoices:
-        #     paid_for += item.paid_for
-        #     debt += item.debt
         self.set_finance(paid_for, debt, invoice.user_id, invoice.firm_id)
 
     def set_finance(

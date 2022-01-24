@@ -1,3 +1,4 @@
+import json
 from typing import List
 
 from fastapi import APIRouter, Depends, status
@@ -5,9 +6,10 @@ from fastapi.responses import Response
 
 from app.database.schemas.cash_box_schemas import CashBox, CashBoxCreate, CashBoxUpdate
 from app.database.schemas.main_schemas import Period
-from app.database.schemas.users_schemas import User
 from app.services.auth_service import get_current_user
 from app.services.cash_box_service import CashBoxService
+from app.sockets.ws_service import manager
+from app.utils.Constants import Tags
 
 router = APIRouter(
     prefix="/cash_box",
@@ -30,7 +32,13 @@ async def create_recod(
         user_id: int = Depends(get_current_user),
         service: CashBoxService = Depends()
 ):
-    return service.create_record(user_id, item)
+    data = CashBox.from_orm(service.create_record(user_id, item))
+    await manager.broadcast(
+        message=data.json(),
+        tag=Tags.CASH_BOX.value,
+        company_id=data.company_id
+    )
+    return data
 
 
 @router.put("/{item_id}", response_model=CashBox)
@@ -40,11 +48,17 @@ async def update_record(
         user_id: int = Depends(get_current_user),
         service: CashBoxService = Depends()
 ):
-    return service.update_record(
+    data = CashBox.from_orm(service.update_record(
         user_id=user_id,
         item_id=item_id,
         item_data=item
+    ))
+    await manager.broadcast(
+        message=data.json(),
+        tag=Tags.CASH_BOX.value,
+        company_id=data.company_id
     )
+    return data
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -53,6 +67,11 @@ async def delete_record(
         user_id: int = Depends(get_current_user),
         service: CashBoxService = Depends()
 ):
-    service.delete_record(user_id, item_id)
+    user = service.delete_record(user_id, item_id)
+    message = {"item_id": item_id, "message": "Element deleted"}
+    await manager.broadcast(
+        message=json.dumps(message),
+        tag=Tags.CASH_BOX.value,
+        company_id=user.company_id,
+    )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-

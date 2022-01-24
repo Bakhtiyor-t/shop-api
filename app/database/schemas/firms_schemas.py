@@ -46,7 +46,7 @@ class InvoiceBase(BaseModel):
     payment: Decimal
     previous_debt: Decimal
     debt: Decimal
-    date = datetime
+    date: datetime = datetime.utcnow()
 
 
 class Invoice(InvoiceBase):

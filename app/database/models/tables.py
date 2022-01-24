@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, Column, String, Numeric, ForeignKey, Date, Boolean, DateTime, desc
+from sqlalchemy import Integer, Column, String, Numeric, ForeignKey, Boolean, DateTime
 from sqlalchemy.orm import relationship, backref
 
 from ..database import Base
@@ -61,7 +61,7 @@ class Invoice(Base):
     payment = Column(Numeric(10, 3))
     previous_debt = Column(Numeric(10, 3))
     debt = Column(Numeric(10, 3))
-    date = Column(Date)
+    date = Column(DateTime, nullable=False)
 
     firm_id = Column(Integer, ForeignKey("firms.id", ondelete="CASCADE"), index=True)
     firm = relationship('Firm', backref=backref("invoices", cascade="all, delete"))
@@ -105,7 +105,7 @@ class Expense(Base):
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     name = Column(String)
     price = Column(Numeric(10, 3))
-    date = Column(DateTime)
+    date = Column(DateTime, nullable=False)
     firm_flag = Column(Boolean, default=False)
 
     firm_id = Column(Integer, ForeignKey("firms.id", ondelete="CASCADE"), index=True)
@@ -123,7 +123,7 @@ class CashBox(Base):
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     cash = Column(Numeric(10, 3))
     card = Column(Numeric(10, 3))
-    date = Column(DateTime)
+    date = Column(DateTime, nullable=False)
 
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     user = relationship('User', backref=backref("cash_box", cascade="all, delete"))

@@ -17,21 +17,21 @@ def get_user(session, user_id: int) -> tables.User:
     return session.query(tables.User).get(user_id)
 
 
-def check_user(session, user_id: int) -> int:
-    print(session)
+def check_user(session, user_id: int) -> tables.User:
     user = get_user(session, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_412_PRECONDITION_FAILED,
+            detail="Такого пользователя нет в базе!"
+        )
+
     if user.company_id is None:
         raise HTTPException(
             status_code=status.HTTP_412_PRECONDITION_FAILED,
             detail="Вы не состоите в компании!"
         )
-    if not user.chief:
-        raise HTTPException(
-            status_code=status.HTTP_412_PRECONDITION_FAILED,
-            detail="У вас нет прав на это действие!"
-        )
 
-    return user.company_id
+    return user
 
 
 def get(
@@ -40,11 +40,11 @@ def get(
         user_id: int,
         period: Period
 ):
-    company_id = check_user(session, user_id)
+    user = check_user(session, user_id)
     data = (
         session
             .query(table)
-            .filter_by(company_id=company_id)
+            .filter_by(company_id=user.company_id)
             .where(table.date >= period.from_date)
             .where(table.date < period.to_date)
             .order_by(desc(table.date))
@@ -98,12 +98,12 @@ def set_finance(
         paid_for: Decimal,
         debt: Decimal
 ):
-    company_id = check_user(session, user_id)
+    user = check_user(session, user_id)
     data = FirmFinance(paid_for=paid_for, debt=debt, date=datetime.now())
     new_finance = tables.FinanceHistory(
         **data.dict(),
         firm_id=firm_id,
-        company_id=company_id
+        company_id=user.company_id
     )
     session.add(new_finance)
     session.commit()

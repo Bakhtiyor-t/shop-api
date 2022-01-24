@@ -1,0 +1,27 @@
+version: "3"
+
+services:
+  app:
+    build: ./
+    restart: always
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  db:
+    image: postgres
+    restart: always
+    env_file:
+      - .env
+#    environment:
+#      POSTGRES_PASSWORD: baxti01
+#      POSTGRES_PORT: 5432
+#      POSTGRES_DB: shop
+#      POSTGRES_USER: postgres
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"

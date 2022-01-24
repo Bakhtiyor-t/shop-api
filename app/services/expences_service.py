@@ -33,7 +33,7 @@ class ExpenseService:
             user_id: int,
             expense_data: ExpenseCreate,
     ) -> tables.Expense:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
         if expense_data.firm_id:
             data = expense_data.dict()
             expense_data.firm_flag = True
@@ -46,7 +46,7 @@ class ExpenseService:
         expense = tables.Expense(
             **data,
             user_id=user_id,
-            company_id=company_id,
+            company_id=user.company_id,
         )
 
         self.session.add(expense)
@@ -62,7 +62,7 @@ class ExpenseService:
             expense_id: int,
             expense_data: ExpenseUpdate,
     ) -> tables.Expense:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
         expense = (
             self.session
                 .query(tables.Expense)
@@ -83,8 +83,8 @@ class ExpenseService:
             self,
             user_id: int,
             expense_id: int,
-    ) -> None:
-        company_id = check_user(self.session, user_id)
+    ) -> tables.User:
+        user = check_user(self.session, user_id)
         expense = (
             self.session
                 .query(tables.Expense)
@@ -96,21 +96,22 @@ class ExpenseService:
             self.delete_finance(expense)
         self.session.delete(expense)
         self.session.commit()
+        return user
 
     # Finance operations
 
     def get_finance(self, user_id: int, firm_id: int) -> tables.FinanceHistory:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
         return (
             self.session
                 .query(tables.FinanceHistory)
-                .filter_by(firm_id=firm_id, company_id=company_id)
+                .filter_by(firm_id=firm_id, company_id=user.company_id)
                 .order_by(desc(tables.FinanceHistory.date))
                 .first()
         )
 
     def create_finance(self, expense: tables.Expense) -> None:
-        company_id = check_user(self.session, expense.user_id)
+        user = check_user(self.session, expense.user_id)
         finance = self.get_finance(expense.user_id, expense.firm_id)
         paid_for = finance.paid_for + expense.price
         debt = finance.debt - expense.price

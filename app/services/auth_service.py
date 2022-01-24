@@ -3,10 +3,6 @@ from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
-from psycopg2 import errors
-from psycopg2.errorcodes import UNIQUE_VIOLATION
-from pydantic import ValidationError
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from passlib.hash import bcrypt
 

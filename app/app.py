@@ -36,13 +36,55 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 templates = Jinja2Templates(directory="static")
 
+# @app.get("/", tags=["Главная"], response_class=HTMLResponse)
+# def index(request: Request):
+#     return templates.TemplateResponse('index.html', {"request": request})
+# with open("app/static/index.html", 'r') as file:
+#     content = file.read()
+# return HTMLResponse(content, status_code=200)
 
-@app.get("/", tags=["Главная"], response_class=HTMLResponse)
-def index(request: Request):
-    return templates.TemplateResponse('index.html', {"request": request})
-    # with open("app/static/index.html", 'r') as file:
-    #     content = file.read()
-    # return HTMLResponse(content, status_code=200)
+
+# Test Websocket routes
+
+html = """
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chat</title>
+    </head>
+    <body>
+        <h1>WebSocket Chat</h1>
+        <form action="" onsubmit="sendMessage(event)">
+            <input type="text" id="messageText" autocomplete="off"/>
+            <button>Send</button>
+        </form>
+        <ul id='messages'>
+        </ul>
+        <script>
+        var token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NDI0MDQ2MTQsIm5iZiI6MTY0MjQwNDYxNCwiZXhwIjoxNjQyNDA2NDE0LCJzdWIiOiIxOCIsInVzZXIiOnsidXNlcm5hbWUiOiJiYXh0aSIsImlkIjoxOCwiY29tcGFueV9pZCI6MTQsImNoaWVmIjpmYWxzZX19.FX4Fn_HJRZh0HgOi3pn3fPxEVzstCoIYO9klqyXvUf0"
+            var ws = new WebSocket(`ws://localhost:8000/get_firms?token=${token}`);
+            ws.onmessage = function(event) {
+                var messages = document.getElementById('messages')
+                var message = document.createElement('li')
+                var content = document.createTextNode(event.data)
+                message.appendChild(content)
+                messages.appendChild(message)
+            };
+            function sendMessage(event) {
+                var input = document.getElementById("messageText")
+                ws.send(input.value)
+                input.value = ''
+                event.preventDefault()
+            }
+        </script>
+    </body>
+</html>
+"""
+
+
+@app.get("/")
+async def get():
+    return HTMLResponse(html)
 
 
 # For react-admin

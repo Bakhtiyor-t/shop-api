@@ -7,6 +7,7 @@ from . import \
     firms_router, \
     shopping_list_router, \
     main_router, company_router
+from ..sockets import ws_router
 
 router = APIRouter()
 
@@ -18,3 +19,4 @@ router.include_router(expenses_router.router)
 router.include_router(firms_router.router)
 router.include_router(shopping_list_router.router)
 router.include_router(main_router.router)
+router.include_router(ws_router.router)
