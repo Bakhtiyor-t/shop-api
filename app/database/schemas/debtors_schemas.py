@@ -11,6 +11,8 @@ class DebtorBase(BaseModel):
 
 class Debtor(DebtorBase):
     id: int
+    user_id: int
+    company_id: int
 
     class Config:
         orm_mode = True
