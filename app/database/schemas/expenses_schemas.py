@@ -9,21 +9,24 @@ class ExpenseBase(BaseModel):
     name: str
     price: Decimal
     date: datetime = datetime.now()
-    firm_flag: bool = False
 
 
-class Expense(ExpenseBase):
+class ExpensePart(BaseModel):
+    firm_id: Optional[int] = None
+    firm_flag: Optional[bool] = False
+
+
+class Expense(ExpenseBase, ExpensePart):
     id: int
     user_id: int
-    firm_id: Optional[int] = None
     company_id: int
 
     class Config:
         orm_mode = True
 
 
-class ExpenseCreate(ExpenseBase):
-    firm_id: Optional[int] = None
+class ExpenseCreate(ExpenseBase, ExpensePart):
+    pass
 
 
 class ExpenseUpdate(ExpenseBase):

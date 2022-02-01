@@ -1,6 +1,6 @@
-from datetime import date, datetime
+from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -9,7 +9,7 @@ class FirmBase(BaseModel):
     name: str
 
 
-class FirmPart(FirmBase):
+class FirmBasic(FirmBase):
     id: int
     user_id: int
     company_id: int
@@ -19,7 +19,7 @@ class FirmPart(FirmBase):
 
 
 class FirmFinance(BaseModel):
-    paid_for: Optional[Decimal] = Decimal(0)
+    paid: Optional[Decimal] = Decimal(0)
     debt: Optional[Decimal] = Decimal(0)
     date: Optional[datetime] = None
 
@@ -27,7 +27,7 @@ class FirmFinance(BaseModel):
         orm_mode = True
 
 
-class Firm(FirmPart, FirmFinance):
+class Firm(FirmBasic, FirmFinance):
     pass
 
 
@@ -35,18 +35,16 @@ class FirmCreate(FirmBase, FirmFinance):
     pass
 
 
-# class FirmUpdate(BaseModel):
-#     name: str
+class FirmUpdate(FirmBase):
+    pass
 
 
 class InvoiceBase(BaseModel):
-    image_id: int
-    image_uri: str
-    paid_for: Decimal
-    payment: Decimal
+    to_pay: Decimal
+    paid: Decimal
     previous_debt: Decimal
     debt: Decimal
-    date = datetime
+    date: datetime = datetime.utcnow()
 
 
 class Invoice(InvoiceBase):
@@ -54,6 +52,9 @@ class Invoice(InvoiceBase):
     firm_id: int
     user_id: int
     company_id: int
+
+    image_id: int
+    image_uri: str
 
     class Config:
         orm_mode = True
@@ -65,3 +66,9 @@ class InvoiceCreate(InvoiceBase):
 
 class InvoiceUpdate(InvoiceBase):
     pass
+
+
+class Finance(FirmFinance):
+    user_id: int
+    firm_id: int
+    company_id: int

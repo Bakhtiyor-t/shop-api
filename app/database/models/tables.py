@@ -1,5 +1,5 @@
-from sqlalchemy import Integer, Column, String, Numeric, ForeignKey, Date, Boolean, DateTime, desc
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy import Integer, Column, String, Numeric, ForeignKey, Boolean, DateTime
+from sqlalchemy.orm import relationship
 
 from ..database import Base
 
@@ -30,23 +30,23 @@ class Firm(Base):
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     name = Column(String, nullable=False, unique=True)
 
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    user = relationship('User', backref=backref("firms", cascade="all, delete"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    # user = relationship('User', backref=backref("firms", cascade="all, delete"))
 
-    company_id = Column(Integer, ForeignKey("company.id", ondelete="SET NULL"))
+    company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"))
 
 
-class FinanceHistory(Base):
+class FirmFinance(Base):
     __tablename__ = "finances"
 
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
 
-    paid_for = Column(Numeric(10, 3))
+    paid = Column(Numeric(10, 3))
     debt = Column(Numeric(10, 3))
     date = Column(DateTime, nullable=False)
 
     firm_id = Column(Integer, ForeignKey("firms.id", ondelete="CASCADE"))
-    firm = relationship("Firm", backref=backref("finances", cascade="all, delete"))
+    # firm = relationship("Firm", backref=backref("finances", cascade="all, delete"))
 
     company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"))
 
@@ -57,17 +57,17 @@ class Invoice(Base):
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     image_id = Column(Integer, unique=True, nullable=False)
     image_uri = Column(String, nullable=False)
-    paid_for = Column(Numeric(10, 3))
-    payment = Column(Numeric(10, 3))
+    to_pay = Column(Numeric(10, 3))
+    paid = Column(Numeric(10, 3))
     previous_debt = Column(Numeric(10, 3))
     debt = Column(Numeric(10, 3))
-    date = Column(Date)
+    date = Column(DateTime)
 
     firm_id = Column(Integer, ForeignKey("firms.id", ondelete="CASCADE"), index=True)
-    firm = relationship('Firm', backref=backref("invoices", cascade="all, delete"))
+    # firm = relationship('Firm', backref=backref("invoices", cascade="all, delete"))
 
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    user = relationship('User', backref=backref("invoices", cascade="all, delete"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    # user = relationship('User', backref=backref("invoices", cascade="all, delete"))
 
     company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"))
 
@@ -77,11 +77,11 @@ class Debtor(Base):
 
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     name = Column(String, unique=True)
-    paid_for = Column(Numeric(10, 3))
+    paid = Column(Numeric(10, 3))
     debt = Column(Numeric(10, 3))
 
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    user = relationship('User', backref=backref("debtors", cascade="all, delete"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    # user = relationship('User', backref=backref("debtors", cascade="all, delete"))
 
     company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"))
 
@@ -93,8 +93,8 @@ class ShoppingList(Base):
     name = Column(String, unique=True)
     purchased = Column(Boolean, default=False)
 
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    user = relationship('User', backref=backref("shopping_list", cascade="all, delete"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    # user = relationship('User', backref=backref("shopping_list", cascade="all, delete"))
 
     company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"))
 
@@ -103,16 +103,16 @@ class Expense(Base):
     __tablename__ = "expenses"
 
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
-    name = Column(String)
+    name = Column(String)  # you can make it unique
     price = Column(Numeric(10, 3))
     date = Column(DateTime)
     firm_flag = Column(Boolean, default=False)
 
     firm_id = Column(Integer, ForeignKey("firms.id", ondelete="CASCADE"), index=True)
-    firm = relationship('Firm', backref=backref("expenses", cascade="all, delete"))
+    # firm = relationship('Firm', backref=backref("expenses", cascade="all, delete"))
 
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    user = relationship('User', backref=backref("expenses", cascade="all, delete"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    # user = relationship('User', backref=backref("expenses", cascade="all, delete"))
 
     company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"))
 
@@ -125,8 +125,8 @@ class CashBox(Base):
     card = Column(Numeric(10, 3))
     date = Column(DateTime)
 
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    user = relationship('User', backref=backref("cash_box", cascade="all, delete"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    # user = relationship('User', backref=backref("cash_box", cascade="all, delete"))
 
     company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"))
     # company = relationship('User', backref=backref("cash_box", cascade="all, delete"))

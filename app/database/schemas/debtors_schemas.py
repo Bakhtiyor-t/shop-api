@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 class DebtorBase(BaseModel):
     name: str
-    paid_for: Decimal
+    paid: Decimal
     debt: Decimal
 
 

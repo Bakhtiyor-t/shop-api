@@ -16,11 +16,11 @@ class DebtorService:
         self.session = session
 
     def get_debtors(self, user_id: int) -> List[tables.Debtor]:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
         debtors = (
             self.session
                 .query(tables.Debtor)
-                .filter_by(company_id=company_id)
+                .filter_by(company_id=user.company_id)
                 .all()
         )
         return debtors
@@ -30,11 +30,11 @@ class DebtorService:
             user_id: int,
             debtor: debtors_schemas.DebtorCreate
     ) -> tables.Debtor:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
         new_debtor = tables.Debtor(
             **debtor.dict(),
             user_id=user_id,
-            company_id=company_id
+            company_id=user.company_id
         )
         self.session.add(new_debtor)
         validator.check_unique(self.session)
@@ -47,7 +47,7 @@ class DebtorService:
             debtor_id: int,
             updated_data: debtors_schemas.DebtorUpdate
     ) -> tables.Debtor:
-        company_id = check_user(self.session, user_id)
+        check_user(self.session, user_id)
         return update(
             session=self.session,
             user_id=user_id,
@@ -57,10 +57,9 @@ class DebtorService:
         )
 
     def delete_debtor(self, user_id: int, debtor_id: int) -> None:
-        company_id = check_user(self.session, user_id)
+        check_user(self.session, user_id)
         delete(
             session=self.session,
-            user_id=user_id,
             item_id=debtor_id,
             table=tables.Debtor,
         )

@@ -1,7 +1,7 @@
 from typing import List
 
-from fastapi import FastAPI, Request, Depends
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request, Depends, UploadFile, File, HTTPException, status
+from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -58,3 +58,32 @@ async def add_process_time_header(request: Request, call_next):
     response.headers["Access-Control-Expose-Headers"] = "Content-Range"
     response.headers["Content-Range"] = "users 0-20/20"
     return response
+
+
+@app.post("/image")
+async def uplaod_image(
+        upload_file: UploadFile = File(...)
+):
+    if upload_file.content_type != "image/jpeg":
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail="Файл должен быть изображением"
+        )
+    path = "image.jpeg"
+    with open(path, "wb") as file:
+        file.write(upload_file.file.read())
+
+    return FileResponse(
+        path,
+        media_type="image/jpeg"
+    )
+
+    # def a():
+    #     with open("image.jpg", "rb") as aa:
+    #         yield aa.read()
+    #
+    # return StreamingResponse(
+    #     a(),
+    #     media_type="image/jpeg",
+    #     # headers={"Content-Disposition": "attachment filename=image.jpeg"}
+    # )

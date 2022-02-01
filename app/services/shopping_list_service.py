@@ -16,11 +16,11 @@ class ShoppingListService:
         self.session = session
 
     def get_list(self, user_id: int) -> List[ShoppingList]:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
         return (
             self.session
                 .query(tables.ShoppingList)
-                .filter_by(company_id=company_id)
+                .filter_by(company_id=user.company_id)
                 .all()
         )
 
@@ -29,11 +29,11 @@ class ShoppingListService:
             user_id: int,
             list_item: ShoppingListCreate
     ) -> tables.ShoppingList:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
         item = tables.ShoppingList(
             **list_item.dict(),
             user_id=user_id,
-            company_id=company_id
+            company_id=user.company_id
         )
         self.session.add(item)
         validator.check_unique(session=self.session)
@@ -46,7 +46,7 @@ class ShoppingListService:
             item_id: int,
             list_item: ShoppingListUpdate
     ) -> tables.ShoppingList:
-        company_id = check_user(self.session, user_id)
+        check_user(self.session, user_id)
         return update(
             session=self.session,
             table=tables.ShoppingList,
@@ -56,10 +56,9 @@ class ShoppingListService:
         )
 
     def delete_item(self, user_id: int, item_id: int) -> None:
-        company_id = check_user(self.session, user_id)
+        check_user(self.session, user_id)
         delete(
             session=self.session,
-            user_id=user_id,
             item_id=item_id,
             table=tables.ShoppingList,
         )

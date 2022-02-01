@@ -1,14 +1,13 @@
 from typing import List
 
 from fastapi import Depends
-from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from app.database.database import get_session
 from app.database.models import tables
 from app.database.schemas.cash_box_schemas import CashBoxCreate, CashBoxUpdate
 from app.database.schemas.main_schemas import Period
-from app.services.dublicated_operations import update, delete, get_user, check_user, get
+from app.services.dublicated_operations import update, delete, check_user, get
 
 
 class CashBoxService:
@@ -33,11 +32,11 @@ class CashBoxService:
             user_id: int,
             item_data: CashBoxCreate
     ) -> tables.CashBox:
-        company_id = check_user(self.session, user_id)
+        user = check_user(self.session, user_id)
         item = tables.CashBox(
             **item_data.dict(),
             user_id=user_id,
-            company_id=company_id
+            company_id=user.company_id
         )
         self.session.add(item)
         self.session.commit()
@@ -50,7 +49,7 @@ class CashBoxService:
             item_id: int,
             item_data: CashBoxUpdate
     ) -> tables.CashBox:
-        company_id = check_user(self.session, user_id)
+        check_user(self.session, user_id)
         return update(
             session=self.session,
             user_id=user_id,
@@ -64,11 +63,9 @@ class CashBoxService:
             user_id: int,
             item_id: int,
     ) -> None:
-        company_id = check_user(self.session, user_id)
+        check_user(self.session, user_id)
         delete(
             session=self.session,
-            user_id=user_id,
             item_id=item_id,
             table=tables.CashBox,
         )
-

@@ -21,7 +21,7 @@ def check_unique(session: Session) -> None:
         elif isinstance(err.orig, errors.lookup(FOREIGN_KEY_VIOLATION)):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Пользователь с таким именем удалён из базы данных",
+                detail="Пользователь или запись удалёна из базы данных",
                 headers={'WWW-Authenticate': 'Bearer'},
             )
 

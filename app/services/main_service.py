@@ -37,7 +37,7 @@ class MainService:
         total_income = Decimal(0)
 
         for item in firms:
-            total_paid += item.paid_for
+            total_paid += item.paid
             total_debt += item.debt
 
         for item in expenses:
