@@ -25,7 +25,7 @@ class CompanyService:
             user_id: int,
             data: CreateCompany
     ) -> tables.Company:
-        user = check_user(self.session, user_id)
+        user = get_user(self.session, user_id)
         if user.company_id is not None:
             raise HTTPException(
                 status_code=status.HTTP_412_PRECONDITION_FAILED,
