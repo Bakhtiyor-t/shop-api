@@ -13,13 +13,18 @@ from app.database.schemas.main_schemas import Period
 from app.utils import validator
 
 
-def check_user(session: Session, user_id: int) -> tables.User:
+def get_user(session: Session, user_id: int) -> tables.User:
     user = session.query(tables.User).get(user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_412_PRECONDITION_FAILED,
             detail="Такого пользователя нет в базе!"
         )
+    return user
+
+
+def check_user(session: Session, user_id: int) -> tables.User:
+    user = get_user(session, user_id)
     if user.company_id is None:
         raise HTTPException(
             status_code=status.HTTP_412_PRECONDITION_FAILED,

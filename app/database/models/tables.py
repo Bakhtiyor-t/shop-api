@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, Column, String, Numeric, ForeignKey, Boolean, DateTime
+from sqlalchemy import Integer, Column, String, Numeric, ForeignKey, Boolean, DateTime, Float
 from sqlalchemy.orm import relationship
 
 from ..database import Base
@@ -55,13 +55,14 @@ class Invoice(Base):
     __tablename__ = "invoices"
 
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
-    image_id = Column(Integer, unique=True, nullable=False)
-    image_uri = Column(String, nullable=False)
+    image_id = Column(String, unique=True)
+    image_uri = Column(String)
     to_pay = Column(Numeric(10, 3))
     paid = Column(Numeric(10, 3))
     previous_debt = Column(Numeric(10, 3))
     debt = Column(Numeric(10, 3))
     date = Column(DateTime)
+    products = relationship("Product", backref="invoice")
 
     firm_id = Column(Integer, ForeignKey("firms.id", ondelete="CASCADE"), index=True)
     # firm = relationship('Firm', backref=backref("invoices", cascade="all, delete"))
@@ -70,6 +71,19 @@ class Invoice(Base):
     # user = relationship('User', backref=backref("invoices", cascade="all, delete"))
 
     company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"))
+
+
+class Product(Base):
+    __tablename__ = "products"
+
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    name = Column(String)
+    count = Column(Float)
+    type = Column(String)
+    price = Column(Numeric(10, 3))
+    total_price = Column(Numeric(10, 3))
+
+    invoice_id = Column(Integer, ForeignKey("invoices.id", ondelete="CASCADE"))
 
 
 class Debtor(Base):

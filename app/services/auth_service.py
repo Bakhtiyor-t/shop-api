@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.database.database import get_session
 from app.database.models import tables
-from app.database.schemas import users_schemas
+from app.database.schemas.users_schemas import UserUpdate, UserCreate, Token, User
 from app.settings import settings
 from app.utils import validator
 
@@ -24,7 +24,7 @@ class AuthService:
     def __init__(self, session: Session = Depends(get_session)):
         self.session = session
 
-    def sign_up(self, user_data: users_schemas.UserCreate) -> users_schemas.Token:
+    def sign_up(self, user_data: UserCreate) -> Token:
         password_hash = self.hash_password(user_data.password)
         user = tables.User(
             username=user_data.username,
@@ -35,7 +35,7 @@ class AuthService:
         self.session.refresh(user)
         return self.create_token(user)
 
-    def sign_in(self, username: str, password: str) -> users_schemas.Token:
+    def sign_in(self, username: str, password: str) -> Token:
         exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Incorrect username or password',
@@ -55,6 +55,30 @@ class AuthService:
             raise exception
 
         return self.create_token(user)
+
+    def get_user(self, user_id: int) -> tables.User:
+        return (
+            self.session
+                .query(tables.User)
+                .get(user_id)
+        )
+
+    def update_user(
+            self,
+            user_id: int,
+            user_data: UserUpdate
+    ) -> Token:
+        user = self.get_user(user_id)
+        user.username = user_data.username
+        user.password_hash = self.hash_password(user_data.password)
+        validator.check_unique(self.session)
+        self.session.refresh(user)
+        return self.create_token(user)
+
+    def delete_user(self, user_id: int) -> None:
+        user = self.get_user(user_id)
+        self.session.delete(user)
+        self.session.commit()
 
     @classmethod
     def verify_passwod(cls, plain_password: str, hased_password) -> bool:
@@ -90,8 +114,8 @@ class AuthService:
         return int(user_id)
 
     @classmethod
-    def create_token(cls, user: tables.User) -> users_schemas.Token:
-        user_data = users_schemas.User.from_orm(user)
+    def create_token(cls, user: tables.User) -> Token:
+        user_data = User.from_orm(user)
 
         date = datetime.utcnow()
         payload = {
@@ -109,4 +133,4 @@ class AuthService:
 
         )
 
-        return users_schemas.Token(access_token=token)
+        return Token(access_token=token)

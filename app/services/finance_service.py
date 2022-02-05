@@ -71,8 +71,6 @@ class FinanceService:
             prev_data: Base,
             expense: bool = False
     ) -> None:
-        print(data)
-        print(prev_data)
         finance = self.get_finance(data.user_id, data.firm_id)
         paid = finance.paid + (data.paid - prev_data.paid)
         if expense:

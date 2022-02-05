@@ -62,7 +62,7 @@ async def add_process_time_header(request: Request, call_next):
 
 @app.post("/image")
 async def uplaod_image(
-        upload_file: UploadFile = File(...)
+        upload_file: UploadFile = File(..., media_type="image/jpeg")
 ):
     if upload_file.content_type != "image/jpeg":
         raise HTTPException(
