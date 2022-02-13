@@ -1,6 +1,3 @@
-from datetime import datetime
-from decimal import Decimal
-
 from fastapi import HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import desc
@@ -8,7 +5,6 @@ from sqlalchemy.orm import Session
 
 from app.database.database import Base
 from app.database.models import tables
-from app.database.schemas.firms_schemas import FirmFinance
 from app.database.schemas.main_schemas import Period
 from app.utils import validator
 
@@ -17,8 +13,8 @@ def get_user(session: Session, user_id: int) -> tables.User:
     user = session.query(tables.User).get(user_id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_412_PRECONDITION_FAILED,
-            detail="Такого пользователя нет в базе!"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Пользователя с идентификатором {user_id} нет в базе!"
         )
     return user
 
@@ -27,7 +23,7 @@ def check_user(session: Session, user_id: int) -> tables.User:
     user = get_user(session, user_id)
     if user.company_id is None:
         raise HTTPException(
-            status_code=status.HTTP_412_PRECONDITION_FAILED,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Вы не состоите в компании!"
         )
 
@@ -38,7 +34,7 @@ def check_permission(session: Session, user_id: int) -> tables.User:
     user = check_user(session, user_id)
     if not user.chief:
         raise HTTPException(
-            status_code=status.HTTP_412_PRECONDITION_FAILED,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="У вас нет прав на это действие!"
         )
 

@@ -154,7 +154,12 @@ class InvoicesService:
             firm_id=firm_id
         )
         result = self.save_invoice(invoice)
-        self.create_products(invoice.id, invoice_data.products)
+        self.create_products(
+            user_id=invoice.user_id,
+            company_id=invoice.company_id,
+            invoice_id=invoice.id,
+            product_data=invoice_data.products
+        )
         self.session.refresh(invoice)
         return result
 
@@ -164,6 +169,7 @@ class InvoicesService:
             invoice_id: int,
             invoice_data: InvoiceUpdate
     ) -> tables.Invoice:
+
         invoice = self.get_updated_invoice(user_id, invoice_id)
         self.check_update(invoice.image_id)
 
@@ -177,17 +183,30 @@ class InvoicesService:
         self.session.refresh(invoice)
         # удаляю потому что может быть разное кол-во товаров
         self.delete_products(invoice.id)
-        self.create_products(invoice.id, invoice_data.products)
+        self.create_products(
+            user_id=invoice.user_id,
+            company_id=invoice.company_id,
+            invoice_id=invoice.id,
+            product_data=invoice_data.products
+        )
 
         finance = self.get_finance(invoice)
         self.finance_service.update_finance(finance, prev_finance)
         return invoice
 
-    def create_products(self, invoice_id, product_data):
+    def create_products(
+            self,
+            user_id,
+            company_id,
+            invoice_id,
+            product_data,
+    ):
         for item in product_data:
             product = tables.Product(
                 **item.dict(),
-                invoice_id=invoice_id
+                invoice_id=invoice_id,
+                company_id=company_id,
+                user_id=user_id
             )
             self.session.add(product)
             self.session.commit()

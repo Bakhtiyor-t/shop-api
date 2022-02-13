@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database.database import get_session
 from app.database.models import tables
-from app.database.schemas.firms_schemas import FirmCreate, Firm, FirmFinance, FirmBasic
+from app.database.schemas.firms_schemas import FirmCreate, Firm, FirmFinance, FirmBasic, FirmUpdate
 from app.database.schemas.main_schemas import Period
 from app.services.dublicated_operations import delete, check_user
 from app.utils import validator
@@ -89,7 +89,7 @@ class FirmsService:
             self,
             user_id: int,
             firm_id: int,
-            firm_name: str
+            firm_name: FirmUpdate
     ) -> tables.Firm:
         user = check_user(self.session, user_id)
         firm = (
@@ -98,7 +98,7 @@ class FirmsService:
                 .first()
         )
         validator.is_none_check(firm)
-        firm.name = firm_name
+        firm.name = firm_name.name
         firm.user_id = user_id
         self.session.commit()
         self.session.refresh(firm)

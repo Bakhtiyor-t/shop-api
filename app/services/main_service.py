@@ -4,9 +4,8 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from app.database.database import get_session
-from app.database.schemas.main_schemas import Period, Result
+from app.database.schemas.main_schemas import Period, Report
 from app.services.cash_box_service import CashBoxService
-from app.services.dublicated_operations import check_user
 from app.services.expences_service import ExpenseService
 from app.services.frims_service import FirmsService
 
@@ -25,8 +24,7 @@ class MainService:
         self.expenses_service = expenses_service
         self.cash_box_service = cash_box_service
 
-    def get_info(self, user_id: int, period: Period) -> Result:
-        company_id = check_user(self.session, user_id)
+    def get_info(self, user_id: int, period: Period) -> Report:
         firms = self.firm_service.get_firms(user_id, period)
         expenses = self.expenses_service.get_expenses(user_id, period)
         cash_box = self.cash_box_service.get_info(user_id, period)
@@ -54,7 +52,7 @@ class MainService:
         expense = total_paid + total_expenses
         debt = total_debt
 
-        return Result(
+        return Report(
             profit=profit,
             income=income,
             expense=expense,

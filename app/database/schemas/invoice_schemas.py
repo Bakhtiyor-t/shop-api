@@ -4,31 +4,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
-
-class ProductBase(BaseModel):
-    name: str
-    count: float
-    price: Decimal
-    total_price: Decimal
-    # для ед.езмерения пример (кг или шт)
-    type: str
-    # в дальнейшем можно сделать перечисление
-    # type: # Enum
-
-
-class Product(ProductBase):
-    id: str
-
-    class Config:
-        orm_mode = True
-
-
-class ProductCreate(ProductBase):
-    pass
-
-
-class ProductUpdate(ProductBase):
-    pass
+from app.database.schemas.products_schemas import Product, ProductCreate, ProductUpdate
 
 
 class InvoiceBase(BaseModel):
@@ -57,7 +33,7 @@ class InvoiceCreate(InvoiceBase):
     products: List[ProductCreate]
 
 
-class InvoiceUpdate(InvoiceBase, ProductUpdate):
+class InvoiceUpdate(InvoiceBase):
     products: List[ProductUpdate]
 
 

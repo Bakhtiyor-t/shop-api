@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from psycopg2 import errors
-from psycopg2.errorcodes import UNIQUE_VIOLATION, FOREIGN_KEY_VIOLATION
-from sqlalchemy.exc import IntegrityError
+from psycopg2.errorcodes import UNIQUE_VIOLATION, FOREIGN_KEY_VIOLATION, NUMERIC_VALUE_OUT_OF_RANGE
+from sqlalchemy.exc import IntegrityError, DataError
 from sqlalchemy.orm import Session
 
 from app.database.models.tables import Base
@@ -10,18 +10,23 @@ from app.database.models.tables import Base
 def check_unique(session: Session) -> None:
     try:
         session.commit()
-    except IntegrityError as err:
-        # assert isinstance(err.orig, errors.lookup(UNIQUE_VIOLATION))
+    except (DataError, IntegrityError) as err:
         if isinstance(err.orig, errors.lookup(UNIQUE_VIOLATION)):
             session.rollback()
             raise HTTPException(
-                status_code=status.HTTP_412_PRECONDITION_FAILED,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Такое имя уже занято"
             )
-        elif isinstance(err.orig, errors.lookup(FOREIGN_KEY_VIOLATION)):
+        if isinstance(err.orig, errors.lookup(FOREIGN_KEY_VIOLATION)):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Пользователь или запись удалёна из базы данных",
+                detail="Пользователь с таким именем удалён из базы данных",
+                headers={'WWW-Authenticate': 'Bearer'},
+            )
+        if isinstance(err.orig, errors.lookup(NUMERIC_VALUE_OUT_OF_RANGE)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Целое число вне диапазона",
                 headers={'WWW-Authenticate': 'Bearer'},
             )
 

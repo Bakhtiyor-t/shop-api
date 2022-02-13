@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from app.database.database import get_session

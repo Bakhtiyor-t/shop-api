@@ -33,7 +33,6 @@ class ExpenseService:
             expense_data: ExpenseCreate,
     ) -> tables.Expense:
         user = check_user(self.session, user_id)
-        # TODO если id сделать str то if, else не нужен
         if expense_data.firm_id:
             expense_data.firm_flag = True
             data = expense_data.dict()

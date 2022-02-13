@@ -14,7 +14,7 @@ class Period(MainBase):
     to_date: Optional[datetime] = datetime.now() + timedelta(days=7)
 
 
-class Result(BaseModel):
+class Report(BaseModel):
     profit: Decimal
     income: Decimal
     expense: Decimal

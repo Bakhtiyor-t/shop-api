@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.database.schemas import users_schemas
@@ -28,7 +28,7 @@ async def sign_in(
 
 
 # It's not correct work need fix
-@router.get("/user", response_model=User)
+@router.get("/get_user", response_model=User)
 def get_user(
         user_id: int = Depends(get_current_user),
         service: AuthService = Depends()
@@ -36,7 +36,7 @@ def get_user(
     return service.get_user(user_id)
 
 
-@router.put("/", response_model=Token)
+@router.put("/update_user", response_model=Token)
 async def update_user(
         user_data: UserUpdate,
         user_id: int = Depends(get_current_user),
@@ -45,9 +45,10 @@ async def update_user(
     return service.update_user(user_id, user_data)
 
 
-@router.delete("/")
+@router.delete("/delete_user", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
         user_id: int = Depends(get_current_user),
         service: AuthService = Depends()
 ):
-    return service.delete_user(user_id)
+    service.delete_user(user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

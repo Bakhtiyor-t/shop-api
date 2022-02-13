@@ -4,9 +4,7 @@ from fastapi import APIRouter, status, Depends
 from fastapi.responses import Response
 
 from app.database.schemas.firms_schemas import Firm, FirmCreate, FirmUpdate
-from app.database.schemas.invoice_schemas import Invoice, InvoiceCreate, InvoiceUpdate
 from app.database.schemas.main_schemas import Period
-from app.database.schemas.users_schemas import User
 from app.services.auth_service import get_current_user
 from app.services.frims_service import FirmsService
 

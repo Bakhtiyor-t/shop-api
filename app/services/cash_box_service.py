@@ -8,6 +8,7 @@ from app.database.models import tables
 from app.database.schemas.cash_box_schemas import CashBoxCreate, CashBoxUpdate
 from app.database.schemas.main_schemas import Period
 from app.services.dublicated_operations import update, delete, check_user, get
+from app.utils.validator import check_unique
 
 
 class CashBoxService:
@@ -39,7 +40,7 @@ class CashBoxService:
             company_id=user.company_id
         )
         self.session.add(item)
-        self.session.commit()
+        check_unique(self.session)
         self.session.refresh(item)
         return item
 

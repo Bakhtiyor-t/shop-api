@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.database.database import get_session
 from app.database.models import tables
 from app.database.schemas.users_schemas import UserUpdate, UserCreate, Token, User
+from app.services.dublicated_operations import get_user
 from app.settings import settings
 from app.utils import validator
 
@@ -51,24 +52,20 @@ class AuthService:
 
         if not user:
             raise exception
-        if not self.verify_passwod(password, user.password_hash):
+        if not self.verify_password(password, user.password_hash):
             raise exception
 
         return self.create_token(user)
 
     def get_user(self, user_id: int) -> tables.User:
-        return (
-            self.session
-                .query(tables.User)
-                .get(user_id)
-        )
+        return get_user(self.session, user_id)
 
     def update_user(
             self,
             user_id: int,
             user_data: UserUpdate
     ) -> Token:
-        user = self.get_user(user_id)
+        user = get_user(self.session, user_id)
         user.username = user_data.username
         user.password_hash = self.hash_password(user_data.password)
         validator.check_unique(self.session)
@@ -76,13 +73,17 @@ class AuthService:
         return self.create_token(user)
 
     def delete_user(self, user_id: int) -> None:
-        user = self.get_user(user_id)
+        user = get_user(self.session, user_id)
+        if user.chief:
+            company = self.session.query(tables.Company).get(user.company_id)
+            self.session.delete(company)
+            self.session.commit()
         self.session.delete(user)
         self.session.commit()
 
     @classmethod
-    def verify_passwod(cls, plain_password: str, hased_password) -> bool:
-        return bcrypt.verify(plain_password, hased_password)
+    def verify_password(cls, plain_password: str, hashed_password) -> bool:
+        return bcrypt.verify(plain_password, hashed_password)
 
     @classmethod
     def hash_password(cls, password: str) -> str:

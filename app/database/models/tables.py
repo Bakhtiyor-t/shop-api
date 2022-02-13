@@ -62,13 +62,12 @@ class Invoice(Base):
     previous_debt = Column(Numeric(10, 3))
     debt = Column(Numeric(10, 3))
     date = Column(DateTime)
-    products = relationship("Product", backref="invoice")
+
+    products = relationship("Product", backref="invoice", cascade="all, delete")
 
     firm_id = Column(Integer, ForeignKey("firms.id", ondelete="CASCADE"), index=True)
-    # firm = relationship('Firm', backref=backref("invoices", cascade="all, delete"))
 
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), index=True)
-    # user = relationship('User', backref=backref("invoices", cascade="all, delete"))
 
     company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"))
 
@@ -83,7 +82,9 @@ class Product(Base):
     price = Column(Numeric(10, 3))
     total_price = Column(Numeric(10, 3))
 
-    invoice_id = Column(Integer, ForeignKey("invoices.id", ondelete="CASCADE"))
+    invoice_id = Column(Integer, ForeignKey("invoices.id", ondelete="CASCADE"), index=True)
+    company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"), index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
 
 
 class Debtor(Base):
