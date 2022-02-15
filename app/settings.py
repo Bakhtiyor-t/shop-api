@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     server_host: str = "0.0.0.0"
     server_port: int = 8000
     reload: bool = False
+    workers: int = 1
 
     postgres_host: str = "0.0.0.0"
     postgres_port: int = 5432
